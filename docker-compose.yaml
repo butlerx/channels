@@ -1,0 +1,15 @@
+---
+version: "3.5"
+services:
+  nats:
+    image: nats
+    ports:
+      - "8222:8222"
+      - "4222:4222"
+  channels:
+    build: .
+    depends_on: ["nats"]
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./configs:/etc/channels/:ro

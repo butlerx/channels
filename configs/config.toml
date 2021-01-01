@@ -1,0 +1,7 @@
+listen = '127.0.0.1:9001'
+
+[nats]
+url = 'nats://127.0.0.1:4222'
+tls = false
+subject = 'channels.all'
+
