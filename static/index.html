@@ -1,4 +1,4 @@
-pub static INDEX_HTML: &str = r#"<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
     <head>
         <title>Warp Chat</title>
@@ -24,7 +24,7 @@ pub static INDEX_HTML: &str = r#"<!DOCTYPE html>
             chat.innerHTML = '<p><em>Connected!</em></p>';
         };
         ws.onmessage = function(msg) {
-            message(msg.data);
+            message('<Other>: ' + msg.data);
         };
         ws.onclose = function() {
             chat.getElementsByTagName('em')[0].innerText = 'Disconnected!';
@@ -38,4 +38,3 @@ pub static INDEX_HTML: &str = r#"<!DOCTYPE html>
         </script>
     </body>
 </html>
-"#;

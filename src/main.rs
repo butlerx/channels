@@ -3,14 +3,15 @@ extern crate log;
 extern crate stderrlog;
 
 mod config;
-mod pages;
+mod routes;
 
 use config::{Nats, Config};
-use futures::{SinkExt, StreamExt};
-use std::{io::Result, path::PathBuf};
-use structopt::StructOpt;
-use warp::{Filter, ws::{Message, WebSocket}};
 use nats::{self, asynk::Connection};
+use std::{net::SocketAddr,io::Result, path::PathBuf};
+use structopt::StructOpt;
+use warp::{Rejection, Filter};
+
+type Responce<T> = std::result::Result<T, Rejection>;
 
 /// NATS Websocket server
 #[derive(Debug, StructOpt)]
@@ -48,18 +49,27 @@ async fn main() -> Result<()> {
     let conf = Config::from_file(&args.config)?;
     info!("config loaded; path={:?}", args.config);
 
-    let event = warp::path!("api" / "v1"/ "events" / String/ ..)
-        .and(warp::ws()).and(with_nats(conf.nats).await)
-        .map(|subject: String,  ws: warp::ws::Ws, nc: Connection| {
-            ws.on_upgrade(|socket| event_handler(socket, nc, subject))
-        });
+    let health = warp::path!("health").and_then(routes::health::handler);
+    let events = warp::path!("api" / "v1"/ "events" / String/ ..)
+        .and(warp::ws())
+        .and(with_nats(&conf.nats).await)
+        .and_then(routes::subscribe::handler);
+    let publish = warp::path!("api" / "v1"/ "events" / String)
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(with_nats(&conf.nats).await)
+        .and_then(routes::publish::handler);
 
-    warp::serve(warp::path::end().map(|| warp::reply::html(pages::INDEX_HTML)).or(event)).run(([127, 0, 0, 1], 3030)).await;
+    let routes = warp::fs::dir("static").or(health)
+        .or(events)
+        .or(publish);
+
+    warp::serve(routes).run(conf.listen.parse::<SocketAddr>().unwrap()).await;
     Ok(())
 }
 
-async fn with_nats(nats: Nats) -> impl Filter<Extract = (Connection,), Error = std::convert::Infallible> + Clone {
-    let opts = if let Some(creds_path) = nats.creds {
+async fn with_nats(nats: &Nats) -> impl Filter<Extract = (Connection,), Error = std::convert::Infallible> + Clone {
+    let opts = if let Some(creds_path) = &nats.creds {
         nats::Options::with_credentials(creds_path)
     } else {
         nats::Options::new()
@@ -69,35 +79,4 @@ async fn with_nats(nats: Nats) -> impl Filter<Extract = (Connection,), Error = s
         .tls_required(nats.tls)
         .connect_async(&nats.url).await.unwrap();
     warp::any().map(move || nc.clone())
-}
-
-async fn event_handler(ws: WebSocket, nc:Connection, subject: String) {
-    info!("Connection Opened");
-    let (mut sender, mut rcv) = ws.split();
-    let mut sub = nc.subscribe(&subject).await.unwrap();
-    tokio::task::spawn(async move {
-        while let Some(msg) = sub.next().await {
-            let txt = String::from_utf8(msg.data).unwrap_or("Invalid UTF-8".to_string());
-            debug!("Message recieved from nats: {}", txt);
-            let t = sender.send(Message::text(txt)).await;
-            info!("{:?}", t)
-        }
-    });
-    while let Some(event) = rcv.next().await {
-        match event {
-            Ok(msg) => {
-                debug!("Message recieved from websocket: {:?}", msg);
-                if let Ok(txt) = msg.to_str() {
-                    if let Err(err) = nc.publish(&subject, txt).await  {
-                        error!("Error publishing message: {}", err);
-                    }
-                }
-            }
-            Err(err) => {
-                error!("websocket error: {}", err);
-                break;
-            }
-        }
-    };
-    info!("Connection Dropped");
 }
