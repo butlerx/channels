@@ -5,11 +5,11 @@ extern crate stderrlog;
 mod config;
 mod routes;
 
-use config::{Nats, Config};
+use config::{Config, Nats};
 use nats::{self, asynk::Connection};
-use std::{net::SocketAddr,io::Result, path::PathBuf};
+use std::{io::Result, net::SocketAddr, path::PathBuf};
 use structopt::StructOpt;
-use warp::{Rejection, Filter};
+use warp::{Filter, Rejection};
 
 type Responce<T> = std::result::Result<T, Rejection>;
 
@@ -50,25 +50,30 @@ async fn main() -> Result<()> {
     info!("config loaded; path={:?}", args.config);
 
     let health = warp::path!("health").and_then(routes::health::handler);
-    let events = warp::path!("api" / "v1"/ "events" / String/ ..)
+    let events = warp::path!("api" / "v1" / "events" / String / ..)
         .and(warp::ws())
         .and(with_nats(&conf.nats).await)
         .and_then(routes::subscribe::handler);
-    let publish = warp::path!("api" / "v1"/ "events" / String)
+    let publish = warp::path!("api" / "v1" / "events" / String)
         .and(warp::post())
         .and(warp::body::json())
         .and(with_nats(&conf.nats).await)
         .and_then(routes::publish::handler);
 
-    let routes = warp::fs::dir("static").or(health)
+    let routes = warp::fs::dir("client/build")
+        .or(health)
         .or(events)
         .or(publish);
 
-    warp::serve(routes).run(conf.listen.parse::<SocketAddr>().unwrap()).await;
+    warp::serve(routes)
+        .run(conf.listen.parse::<SocketAddr>().unwrap())
+        .await;
     Ok(())
 }
 
-async fn with_nats(nats: &Nats) -> impl Filter<Extract = (Connection,), Error = std::convert::Infallible> + Clone {
+async fn with_nats(
+    nats: &Nats,
+) -> impl Filter<Extract = (Connection,), Error = std::convert::Infallible> + Clone {
     let opts = if let Some(creds_path) = &nats.creds {
         nats::Options::with_credentials(creds_path)
     } else {
@@ -77,6 +82,8 @@ async fn with_nats(nats: &Nats) -> impl Filter<Extract = (Connection,), Error = 
     let nc = opts
         .with_name("Channels Server")
         .tls_required(nats.tls)
-        .connect_async(&nats.url).await.unwrap();
+        .connect_async(&nats.url)
+        .await
+        .expect("Unable to connect to Nats server");
     warp::any().map(move || nc.clone())
 }
