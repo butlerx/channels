@@ -15,7 +15,7 @@ export function subscribe(channel: string) {
   ws.addEventListener('message', (event) => {
     messages.set([
       ...get(messages),
-      { channel, text: event.data, timestamp: new Date().toLocaleString() },
+      { channel, text: parseMsg(event.data), timestamp: new Date().toLocaleString() },
     ]);
   });
   sockets[channel] = ws;
@@ -25,5 +25,13 @@ export function subscribe(channel: string) {
 export function send(channel: string, message: string) {
   if (channel in sockets && sockets[channel].readyState <= 1) {
     sockets[channel].send(message);
+  }
+}
+
+function parseMsg(msg: string) {
+  try {
+    return JSON.parse(msg);
+  } catch {
+    return msg;
   }
 }

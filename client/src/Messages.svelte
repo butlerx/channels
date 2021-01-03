@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import Message from './Message.svelte';
   import { messages, channels, send } from './store.ts';
 
   let channel;
@@ -21,24 +21,6 @@
     height: 100%;
     overflow: scroll;
     background: var(--secondary-color);
-
-    .message {
-      margin: 15px 0;
-
-      &__channel {
-        font-size: 11px;
-        color: var(--main-text-color);
-        opacity: 0.9;
-        margin-bottom: 6px;
-      }
-      &__text {
-        background: var(--main-color);
-        color: var(--secondary-color);
-        display: inline;
-        padding: 4px 8px;
-        border-radius: 8px;
-      }
-    }
   }
 
   form {
@@ -75,11 +57,7 @@
 
 <div class="messages">
   {#each $messages as message}
-    <div class="message">
-      <div class="message__channel">{message.channel}</div>
-      <div class="message__text">{message.text}</div>
-      <div class="message__timestamp">{message.timestamp}</div>
-    </div>
+    <Message message="{message}" />
   {/each}
 </div>
 <form on:submit|preventDefault="{onSendMessage}">

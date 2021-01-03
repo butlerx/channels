@@ -1,19 +1,22 @@
 use crate::Responce;
 use nats::asynk::Connection;
 use serde::{Deserialize, Serialize};
-use warp::{http::StatusCode, Reply};
+use serde_json::value::Value;
+use warp::{reply, Reply};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
     msg: String,
+    processed: bool,
 }
 
-pub async fn handler(subject: String, body: Event, nc: Connection) -> Responce<impl Reply> {
+pub async fn handler(subject: String, body: Value, nc: Connection) -> Responce<impl Reply> {
     debug!("Event Recieved; subject={} body={:?}", subject, body);
-    if let Ok(txt) = serde_json::to_string(&body) {
-        if let Err(err) = nc.publish(&subject, &txt).await {
-            error!("Error publishing message: {}", err);
-        }
+    let txt = serde_json::to_string(&body).unwrap();
+    if let Err(err) = nc.publish(&subject, &txt).await {
+        error!("Error publishing message: {}", err);
+        Err(warp::reject())
+    } else {
+        Ok(reply::json(&Event{msg: "Message published".to_string(), processed:true}))
     }
-    Ok(StatusCode::OK)
 }
