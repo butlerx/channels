@@ -1,11 +1,20 @@
-use crate::{routes::Responce, CONNECTED_CLIENTS};
+use crate::routes::Responce;
 use futures::{SinkExt, StreamExt};
 use nats::asynk::Connection;
+use prometheus::IntGaugeVec;
 use serde::{Deserialize, Serialize};
 use warp::{
     ws::{Message, WebSocket, Ws},
     Reply,
 };
+
+lazy_static! {
+    static ref CONNECTED_CLIENTS: IntGaugeVec = register_int_gauge_vec!(
+        opts!("connected_clients", "Connected Clients"),
+        &["group", "subject"]
+    )
+    .expect("metric can be created");
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct Args {
