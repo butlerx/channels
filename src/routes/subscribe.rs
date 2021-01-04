@@ -1,19 +1,33 @@
 use crate::Responce;
 use futures::{SinkExt, StreamExt};
+use serde::{Deserialize, Serialize};
 use nats::asynk::Connection;
 use warp::{
     ws::{Message, WebSocket, Ws},
     Reply,
 };
 
-pub async fn handler(subject: String, ws: Ws, nc: Connection) -> Responce<impl Reply> {
-    Ok(ws.on_upgrade(|socket| handle_connection(socket, nc, subject)))
+#[derive(Deserialize, Serialize)]
+pub struct Args {
+    group: String,
 }
 
-async fn handle_connection(ws: WebSocket, nc: Connection, subject: String) {
+pub async fn handler(
+    subject: String,
+    query: Args,
+    ws: Ws,
+    nc: Connection,
+) -> Responce<impl Reply> {
+    Ok(ws.on_upgrade(move |socket| handle_connection(socket, nc, subject, query.group)))
+}
+
+async fn handle_connection(ws: WebSocket, nc: Connection, subject: String, group: String) {
     info!("Connection Opened");
     let (mut sender, mut rcv) = ws.split();
-    let (ws_subject, mut sub) = (subject.clone(), nc.subscribe(&subject).await.unwrap());
+    let (ws_subject, mut sub) = (
+        subject.clone(),
+        nc.queue_subscribe(&subject, &group).await.unwrap(),
+    );
     tokio::task::spawn(async move {
         while let Some(msg) = sub.next().await {
             let txt = String::from_utf8(msg.data).unwrap_or("Invalid UTF-8".to_string());

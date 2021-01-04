@@ -6,6 +6,7 @@ mod config;
 mod routes;
 
 use config::{Config, Nats};
+use futures::join;
 use nats::{self, asynk::Connection};
 use std::{io::Result, net::SocketAddr, path::PathBuf};
 use structopt::StructOpt;
@@ -51,6 +52,7 @@ async fn main() -> Result<()> {
 
     let health = warp::path!("health").and_then(routes::health::handler);
     let events = warp::path!("api" / "v1" / "events" / String / ..)
+        .and(warp::query::<routes::subscribe::Args>())
         .and(warp::ws())
         .and(with_nats(&conf.nats).await)
         .and_then(routes::subscribe::handler);
@@ -60,14 +62,22 @@ async fn main() -> Result<()> {
         .and(with_nats(&conf.nats).await)
         .and_then(routes::publish::handler);
 
-    let routes = warp::fs::dir("client/build")
+    let private_routes = warp::fs::dir("client/build")
         .or(health)
         .or(events)
-        .or(publish);
+        .or(publish.clone());
 
-    warp::serve(routes)
-        .run(conf.listen.parse::<SocketAddr>().unwrap())
-        .await;
+    let public_routes = warp::get()
+        .and(warp::path::end())
+        .and(warp::fs::file("./README.md"))
+        .or(health)
+        .or(publish.clone());
+
+    let private_server =
+        warp::serve(private_routes).run(conf.server.private.parse::<SocketAddr>().unwrap());
+    let public_server =
+        warp::serve(public_routes).run(conf.server.public.parse::<SocketAddr>().unwrap());
+    join!(private_server, public_server);
     Ok(())
 }
 

@@ -10,3 +10,10 @@ servers.
 
 Channels is designed for easy webhook integration, etl and buffering of
 distributed workloads.
+
+## Spark Gapping
+
+Channels has to endpoints, a public endpoint that only excepts post requests and
+a private with all endpoint available. This allow channels to accept webhooks
+from multiple servers without having to have the consumption endpoint available
+publicly.

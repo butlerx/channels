@@ -6,8 +6,9 @@ const WebSocket = require('websocket').w3cwebsocket;
 const fetch = require('node-fetch');
 
 const listen = 'unstructured';
+const group = 'Node Etl example';
 
-const ws = new WebSocket(`ws://localhost:3030/api/v1/events/${listen}`);
+const ws = new WebSocket(`ws://localhost:3030/api/v1/events/${listen}?group=${group}`);
 
 ws.addEventListener('message', (event) => {
   fetch('http://localhost:3030/api/v1/events/structured', {

@@ -17,6 +17,9 @@ pub async fn handler(subject: String, body: Value, nc: Connection) -> Responce<i
         error!("Error publishing message: {}", err);
         Err(warp::reject())
     } else {
-        Ok(reply::json(&Event{msg: "Message published".to_string(), processed:true}))
+        Ok(reply::json(&Event {
+            msg: "Message published".to_string(),
+            processed: true,
+        }))
     }
 }

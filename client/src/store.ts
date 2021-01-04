@@ -11,7 +11,9 @@ channels.subscribe((c) => {
 });
 
 export function subscribe(channel: string) {
-  const ws = new WebSocket(`ws://${location.host}/api/v1/events/${channel}`);
+  const randomId = `js-client-${guidGenerator()}`;
+  console.log(randomId);
+  const ws = new WebSocket(`ws://${location.host}/api/v1/events/${channel}?group=${randomId}`);
   ws.addEventListener('message', (event) => {
     messages.set([
       ...get(messages),
@@ -34,4 +36,9 @@ function parseMsg(msg: string) {
   } catch {
     return msg;
   }
+}
+
+function guidGenerator() {
+  const S4 = () => (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+  return `js-client-${S4()}${S4()}-${S4()}-${S4()}-${S4()}-${S4()}${S4()}${S4()}`;
 }

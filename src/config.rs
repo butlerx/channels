@@ -27,14 +27,26 @@ impl Default for Nats {
     }
 }
 
-fn default_server_listen() -> String {
-    "127.0.0.1:9001".to_string()
+#[derive(Clone, Deserialize, Debug, Serialize)]
+pub struct Server {
+    /// Private Endpoint for consuming data from
+    pub private: String,
+    /// Public Endpoint for publishing data to
+    pub public: String,
+}
+impl Default for Server {
+    fn default() -> Self {
+        Server {
+            public: "0.0.0.0:9002".to_string(),
+            private: "127.0.0.1:9001".to_string(),
+        }
+    }
 }
 
 #[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct Config {
-    #[serde(default = "default_server_listen")]
-    pub listen: String,
+    #[serde(default)]
+    pub server: Server,
     #[serde(default)]
     pub nats: Nats,
 }

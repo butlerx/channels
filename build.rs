@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    let client_dir = env::var("CLIENT_DIR").unwrap_or("client".to_string());
+    let client_dir = env::var("CLIENT_DIR").unwrap_or_else(|_| "client".to_string());
     let root = Path::new(&client_dir);
     assert!(env::set_current_dir(&root).is_ok());
     Command::new("yarn").status().unwrap();
