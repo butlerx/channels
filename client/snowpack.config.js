@@ -1,6 +1,6 @@
 /** @type {import("snowpack").SnowpackUserConfig } */
 module.exports = {
-  plugins: ['@snowpack/plugin-svelte', '@snowpack/plugin-dotenv'],
+  plugins: ['@snowpack/plugin-svelte'],
   mount: {
     public: '/',
     src: '/_dist_',

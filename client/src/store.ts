@@ -5,16 +5,16 @@ export const channels = writable([]);
 
 const sockets: { [string]: Websocket } = {};
 
-channels.subscribe((c) => {
+channels.subscribe(c => {
   const subscribed = Object.keys(sockets);
-  c.filter((channel) => !subscribed.includes(channel)).forEach(subscribe);
+  c.filter(channel => !subscribed.includes(channel)).forEach(subscribe);
 });
 
 export function subscribe(channel: string) {
-  const randomId = `js-client-${guidGenerator()}`;
-  console.log(randomId);
-  const ws = new WebSocket(`ws://${location.host}/api/v1/events/${channel}?group=${randomId}`);
-  ws.addEventListener('message', (event) => {
+  const ws = new WebSocket(
+    `ws://${location.host}/api/v1/events/${channel}?group=${guidGenerator()}`,
+  );
+  ws.addEventListener('message', event => {
     messages.set([
       ...get(messages),
       { channel, text: parseMsg(event.data), timestamp: new Date().toLocaleString() },

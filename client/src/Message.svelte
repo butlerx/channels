@@ -1,7 +1,7 @@
 <script lang="ts">
   export let message;
 
-  import hljs from 'highlight.js/lib/highlight';
+  import hljs from 'highlight.js/lib/core';
   import json from 'highlight.js/lib/languages/json';
   import plaintext from 'highlight.js/lib/languages/plaintext';
   import 'highlight.js/styles/monokai-sublime.css';

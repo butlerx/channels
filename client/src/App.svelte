@@ -34,11 +34,6 @@
       'r m m m m m'
       'n f f f f f';
   }
-
-  .help-text {
-    position: absolute;
-    top: 10px;
-  }
 </style>
 
 <div class="app">

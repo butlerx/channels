@@ -6,4 +6,12 @@ module.exports = {
   proseWrap: 'always',
   printWidth: 100,
   plugins: ['prettier-plugin-svelte'],
+  overrides: [
+    {
+      files: '*.ts',
+      options: {
+        parser: 'typescript',
+      },
+    },
+  ],
 };

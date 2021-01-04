@@ -53,6 +53,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_file(filename: &PathBuf) -> Result<Self, Error> {
+        debug!("loading config; path={:?}", filename);
         let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
         toml::from_str(&*contents)
     }
